@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join Room - Collaborative Video Viewer</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<button class="logout" onclick="logout()">Logout</button>
+
+<div class="role-container">
+
+<h1>Join a Room</h1>
+
+<p>Enter the 4-digit room code shared by the host</p>
+
+<div class="join-room">
+
+<input type="text" id="roomCode" placeholder="0000" maxlength="4" inputmode="numeric">
+
+<button class="main-btn" onclick="joinRoom()">Join Room</button>
+
+<p class="hint"><a href="role.html">← Back to Role Selection</a></p>
+
+</div>
+
+</div>
+
+<div class="video-player-container" id="viewerContainer" style="display:none;">
+
+<div class="viewer-layout">
+  <div class="video-section">
+    <div class="topbar">
+      <button onclick="goBack()">← Back</button>
+      <button class="room" id="roomCodeDisplay"></button>
+    </div>
+    
+    <div class="video-player" id="videoPlayer"></div>
+    <canvas id="doodleCanvas" class="doodle-canvas" style="display:none;"></canvas>
+  </div>
+  
+  <div class="participants-sidebar">
+    <h3>👥 Participants</h3>
+    <div id="participantsList" class="participants-list"></div>
+  </div>
+</div>
+
+</div>
+
+<script src="../js/script.js"></script>
+<script type="module" src="../js/firebase.js"></script>
+<script src="../js/doodle.js"></script>
+</body>
+</html>

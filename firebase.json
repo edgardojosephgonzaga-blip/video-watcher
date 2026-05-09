@@ -1,5 +1,31 @@
 {
   "firestore": {
     "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/pages/index.html"
+      },
+      {
+        "source": "/role.html",
+        "destination": "/pages/role.html"
+      },
+      {
+        "source": "/host.html",
+        "destination": "/pages/host.html"
+      },
+      {
+        "source": "/viewer.html",
+        "destination": "/pages/viewer.html"
+      }
+    ]
   }
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose Role</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<button class="logout">Logout</button>
+
+<div class="role-container">
+
+<h1>Choose Your Role</h1>
+
+<p>Select whether you want to host a session or join as a viewer</p>
+
+<div class="roles">
+
+<div class="card" onclick="goHost()">
+
+<h2>Host</h2>
+
+<ul>
+<li>Upload videos or share YouTube links</li>
+<li>Zoom and pan the video</li>
+<li>Draw annotations</li>
+<li>Get a room code to share</li>
+</ul>
+
+</div>
+
+<div class="card" onclick="goViewer()">
+
+<h2>Viewer</h2>
+
+<ul>
+<li>Join with a 4-digit room code</li>
+<li>Watch the host's video</li>
+<li>See all annotations in real-time</li>
+<li>Synchronized viewing experience</li>
+</ul>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="../js/script.js"></script>
+<button onclick="logout()">Logout</button>
+<script type="module" src="../js/firebase.js"></script>
+
+</body>
+</html>

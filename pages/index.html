@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collaborative Video Viewer</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="login-container">
+
+<h1>Collaborative Video Viewer</h1>
+<p class="subtitle">Sign in with your @gordoncollege.edu.ph account</p>
+
+<div class="notice">
+First time here? Please sign up first before logging in.
+</div>
+
+<div class="tabs">
+<button id="signupTab" class="active">Sign Up</button>
+<button id="loginTab">Login</button>
+</div>
+
+<form id="signupForm">
+
+<label>Full Name</label>
+<input id="signupName" type="text" placeholder="Juan Dela Cruz">
+
+<label>Email</label>
+<input id="signupEmail" type="email" placeholder="your.name@gordoncollege.edu.ph">
+
+<label>Password</label>
+<input id="signupPassword" type="password" placeholder="At least 6 characters">
+
+<label>Confirm Password</label>
+<input type="password" placeholder="Re-enter password">
+
+<button class="main-btn" onclick="signUp(
+document.getElementById('signupName').value,
+document.getElementById('signupEmail').value,
+document.getElementById('signupPassword').value
+)">
+Sign Up
+</button>
+
+<p class="hint">You'll be redirected to choose your role after signing up</p>
+
+</form>
+
+<form id="loginForm">
+
+<label>Email</label>
+<input id="loginEmail" type="email">
+
+<label>Password</label>
+<input id="loginPassword" type="password">
+
+<button type="button" class="main-btn" onclick="login(
+document.getElementById('loginEmail').value,
+document.getElementById('loginPassword').value
+)">
+Login
+</button>
+
+
+</form>
+
+</div>
+
+<script src="../js/script.js"></script>
+<script type="module" src="../js/firebase.js"></script>
+</body>
+</html>

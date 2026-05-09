@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host Video</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div class="topbar">
+
+<button onclick="goBack()">← Back</button>
+<button class="room" onclick="showRoomCode()">Room Code</button>
+<button class="participants-btn" onclick="toggleParticipants()">👥 Participants</button>
+
+</div>
+
+<div class="participants-panel" id="participantsPanel" style="display:none;">
+  <h3>Room Participants</h3>
+  <div id="participantsList"></div>
+  <button onclick="toggleParticipants()" style="width:100%; margin-top:10px;">Close</button>
+</div>
+
+<div class="video-source">
+
+<h2>Select Video Source</h2>
+
+<div class="tabs">
+
+<button id="youtubeBtn" class="active">YouTube</button>
+<button id="uploadBtn">Upload</button>
+
+</div>
+
+<div id="youtubeInput">
+<label>YouTube URL</label>
+<input type="text" placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+<p style="font-size:12px; color:#777; margin-top:5px;">
+  ✓ Full URL: youtube.com/watch?v=VIDEO_ID<br>
+  ✓ Short URL: youtu.be/VIDEO_ID<br>
+  ✓ Video ID: dQw4w9WgXcQ (11 chars)
+</p>
+</div>
+
+<div id="uploadInput">
+<input type="file" accept="video/*">
+</div>
+
+<button class="main-btn" onclick="loadVideo()">Load Video</button>
+
+</div>
+
+<div class="video-player-container">
+<div class="video-player"></div>
+<canvas id="doodleCanvas" class="doodle-canvas" style="display:none;"></canvas>
+</div>
+
+<div class="controls">
+<div class="doodle-controls">
+<button id="toggleDoodle" class="control-btn">🎨 Doodle On</button>
+<input type="color" id="doodleColor" value="#FF0000" class="color-picker">
+<input type="range" id="brushSize" min="1" max="20" value="3" class="brush-size">
+<button id="undoBtn" class="control-btn">↶ Undo</button>
+<button id="clearBtn" class="control-btn">✕ Clear</button>
+</div>
+
+<div class="zoom-controls">
+<button id="zoomOut" class="control-btn">🔍−</button>
+<span id="zoomLevel">100%</span>
+<button id="zoomIn" class="control-btn">🔍+</button>
+</div>
+
+<div style="text-align:center; font-size:12px; color:#777; margin-top:10px;">
+  💡 When zoomed in, drag the video to scroll around
+</div>
+</div>
+
+<script type="module" src="../js/firebase.js"></script>
+<script src="../js/script.js"></script>
+<script src="../js/doodle.js"></script>
+
+
+</body>
+</html>
