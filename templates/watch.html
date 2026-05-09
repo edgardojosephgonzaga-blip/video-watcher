@@ -8,6 +8,7 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -21,8 +22,14 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
+        const authReady = new Promise((resolve) => {
+            onAuthStateChanged(auth, (user) => resolve(user));
+        });
 
+        window.auth = auth;
+        window.authReady = authReady;
         window.db = db;
         window.doc = doc;
         window.setDoc = setDoc;
@@ -115,7 +122,7 @@
             });
         }
 
-        function onPlayerReady(event) {
+        async function onPlayerReady(event) {
             socket.emit('join', { room });
             if (role === 'viewer') {
                 player.mute();
@@ -125,6 +132,18 @@
 
             // Initialize Firestore room
             roomRef = doc(db, 'rooms', room);
+            const user = await window.authReady;
+            if (!user) {
+                alert('Please log in before opening a watch room.');
+                window.location.href = '/';
+                return;
+            }
+            if (!user.email || !user.email.toLowerCase().endsWith('@gordoncollege.edu.ph')) {
+                alert('Please use your @gordoncollege.edu.ph account.');
+                window.location.href = '/';
+                return;
+            }
+
             if (role === 'host') {
                 saveRoomData({
                     time: player.getCurrentTime(),
@@ -139,6 +158,9 @@
                     const data = docSnap.data();
                     handleFirestoreUpdate(data);
                 }
+            }, (error) => {
+                console.error('Firestore room listener failed:', error);
+                alert('Unable to read room data. Please check Firestore rules and your signed-in account.');
             });
         }
 

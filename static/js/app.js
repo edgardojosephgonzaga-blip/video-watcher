@@ -36,7 +36,7 @@ signupBtn.addEventListener('click', async () => {
     const password = document.getElementById('signupPassword').value;
     const confirm = document.getElementById('signupConfirm').value;
 
-    if (!email.endsWith('@gordoncollege.edu.ph')) {
+    if (!email.toLowerCase().endsWith('@gordoncollege.edu.ph')) {
         alert('Please use your @gordoncollege.edu.ph email');
         return;
     }
@@ -51,7 +51,7 @@ signupBtn.addEventListener('click', async () => {
         await setDoc(doc(db, 'users', userCredential.user.uid), {
             name,
             email
-        });
+        }, { merge: true });
         alert('Account created successfully!');
     } catch (error) {
         console.error('Signup error:', error);
