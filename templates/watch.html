@@ -74,6 +74,15 @@
         let drawings = [];
         let roomRef;
 
+        async function saveRoomData(data, options = {}) {
+            try {
+                await setDoc(roomRef, data, options);
+            } catch (error) {
+                console.error('Firestore room write failed:', error);
+                alert('Unable to save room data. Please check Firestore rules and your signed-in account.');
+            }
+        }
+
         if (role !== 'host') {
             document.getElementById('controls').style.display = 'none';
         } else {
@@ -117,7 +126,7 @@
             // Initialize Firestore room
             roomRef = doc(db, 'rooms', room);
             if (role === 'host') {
-                setDoc(roomRef, {
+                saveRoomData({
                     time: player.getCurrentTime(),
                     playing: player.getPlayerState() === YT.PlayerState.PLAYING,
                     zoom,
@@ -142,7 +151,7 @@
                     drawings: drawings
                 };
                 socket.emit('state', { room, action: 'state_change', state: event.data, time: player.getCurrentTime() });
-                setDoc(roomRef, stateData);
+                saveRoomData(stateData);
             }
         }
 
@@ -215,7 +224,7 @@
                 document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
                 document.getElementById('player-wrapper').style.transformOrigin = 'top left';
                 resizeCanvas();
-                setDoc(roomRef, { zoom }, { merge: true });
+                saveRoomData({ zoom }, { merge: true });
             }
         });
 
@@ -226,7 +235,7 @@
                 document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
                 document.getElementById('player-wrapper').style.transformOrigin = 'top left';
                 resizeCanvas();
-                setDoc(roomRef, { zoom }, { merge: true });
+                saveRoomData({ zoom }, { merge: true });
             }
         });
 
@@ -257,7 +266,7 @@
                 drawLine(lastX, lastY, x, y, color);
                 drawings.push({x0: lastX, y0: lastY, x1: x, y1: y, color});
                 socket.emit('state', { room, action: 'draw', x0: lastX, y0: lastY, x1: x, y1: y, color });
-                setDoc(roomRef, { drawings }, { merge: true });
+                saveRoomData({ drawings }, { merge: true });
                 lastX = x;
                 lastY = y;
             }
