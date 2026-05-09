@@ -1,0 +1,27 @@
+name: Deploy Firebase Firestore
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - firebase.json
+      - firestore.rules
+      - .firebaserc
+      - .github/workflows/firebase-firestore.yml
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firestore rules
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --only firestore:rules --project collaborative-video-viewer --non-interactive
