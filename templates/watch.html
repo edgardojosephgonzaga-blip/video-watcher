@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Watch</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAR6Wxm1NgnMOapDq41ter3wjH0GA1vlhA",
+            authDomain: "svww-b179c.firebaseapp.com",
+            projectId: "svww-b179c",
+            storageBucket: "svww-b179c.firebasestorage.app",
+            messagingSenderId: "385630085703",
+            appId: "1:385630085703:web:d30dd9e3f5a77e08cf4762",
+            measurementId: "G-LD7LBMDQJK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.onSnapshot = onSnapshot;
+    </script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #player-wrapper { position: relative; width: 100vw; height: 100vh; }
+        #player { width: 100%; height: 100%; }
+        #canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        #controls { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
+        #controls button, #controls input { margin: 5px; }
+        .color-btn { width: 30px; height: 30px; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="player-wrapper">
+        <div id="player"></div>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="controls">
+        <button id="play-pause">Play</button>
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        <input type="color" id="color-picker" value="#ff0000">
+        <button class="color-btn" style="background: #ff0000;" data-color="#ff0000"></button>
+        <button class="color-btn" style="background: #00ff00;" data-color="#00ff00"></button>
+        <button class="color-btn" style="background: #0000ff;" data-color="#0000ff"></button>
+        <button class="color-btn" style="background: #ffff00;" data-color="#ffff00"></button>
+        <button class="color-btn" style="background: #ff00ff;" data-color="#ff00ff"></button>
+        <button class="color-btn" style="background: #00ffff;" data-color="#00ffff"></button>
+    </div>
+
+    <script>
+        const url = '{{ url }}';
+        const role = '{{ role }}';
+        const room = '{{ room }}';
+        const socket = io();
+        let player;
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let zoom = 1;
+        let color = '#ff0000';
+        let latency = 0; // in seconds
+        let drawings = [];
+        let roomRef;
+
+        if (role !== 'host') {
+            document.getElementById('controls').style.display = 'none';
+        } else {
+            canvas.style.pointerEvents = 'auto';
+        }
+
+        // Extract video ID from URL
+        function getVideoId(url) {
+            const match = url.match(/[?&]v=([^#&?]*)/) || url.match(/youtu\.be\/([^#&?]*)/);
+            return match ? match[1] : null;
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: getVideoId(url),
+                playerVars: {
+                    controls: role === 'host' ? 1 : 0,
+                    disablekb: 1,
+                    fs: 0,
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    rel: 0
+                },
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            socket.emit('join', { room });
+            if (role === 'viewer') {
+                player.mute();
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initialize Firestore room
+            roomRef = doc(db, 'rooms', room);
+            if (role === 'host') {
+                setDoc(roomRef, {
+                    time: player.getCurrentTime(),
+                    playing: player.getPlayerState() === YT.PlayerState.PLAYING,
+                    zoom,
+                    drawings
+                }, { merge: true });
+            }
+            // Listen for changes
+            onSnapshot(roomRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    handleFirestoreUpdate(data);
+                }
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (role === 'host') {
+                const stateData = {
+                    time: player.getCurrentTime(),
+                    playing: event.data === YT.PlayerState.PLAYING,
+                    zoom: zoom,
+                    drawings: drawings
+                };
+                socket.emit('state', { room, action: 'state_change', state: event.data, time: player.getCurrentTime() });
+                setDoc(roomRef, stateData);
+            }
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(zoom, zoom);
+            // Redraw all drawings
+            drawings.forEach(d => drawLine(d.x0, d.y0, d.x1, d.y1, d.color));
+        }
+
+        function handleFirestoreUpdate(data) {
+            if (data.zoom !== zoom) {
+                zoom = data.zoom;
+                document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
+                document.getElementById('player-wrapper').style.transformOrigin = 'top left';
+                resizeCanvas();
+            }
+            if (data.drawings && JSON.stringify(data.drawings) !== JSON.stringify(drawings)) {
+                drawings = data.drawings;
+                resizeCanvas();
+            }
+            if (role === 'viewer') {
+                if (data.playing) {
+                    player.playVideo();
+                    player.seekTo(data.time + latency);
+                } else {
+                    player.pauseVideo();
+                    player.seekTo(data.time + latency);
+                }
+            }
+        }
+
+        socket.on('state', (data) => {
+            if (data.action === 'state_change' && role === 'viewer') {
+                if (data.state === YT.PlayerState.PLAYING) {
+                    player.playVideo();
+                    player.seekTo(data.time + latency);
+                } else if (data.state === YT.PlayerState.PAUSED) {
+                    player.pauseVideo();
+                    player.seekTo(data.time + latency);
+                }
+            } else if (data.action === 'zoom') {
+                zoom = data.zoom;
+                document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
+                document.getElementById('player-wrapper').style.transformOrigin = 'top left';
+                resizeCanvas();
+            } else if (data.action === 'draw') {
+                drawLine(data.x0, data.y0, data.x1, data.y1, data.color);
+                drawings.push({x0: data.x0, y0: data.y0, x1: data.x1, y1: data.y1, color: data.color});
+            }
+        });
+
+        // Controls
+        document.getElementById('play-pause').addEventListener('click', () => {
+            if (role === 'host') {
+                if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            }
+        });
+
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            if (role === 'host') {
+                zoom *= 1.2;
+                socket.emit('state', { room, action: 'zoom', zoom });
+                document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
+                document.getElementById('player-wrapper').style.transformOrigin = 'top left';
+                resizeCanvas();
+                setDoc(roomRef, { zoom }, { merge: true });
+            }
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            if (role === 'host') {
+                zoom /= 1.2;
+                socket.emit('state', { room, action: 'zoom', zoom });
+                document.getElementById('player-wrapper').style.transform = `scale(${zoom})`;
+                document.getElementById('player-wrapper').style.transformOrigin = 'top left';
+                resizeCanvas();
+                setDoc(roomRef, { zoom }, { merge: true });
+            }
+        });
+
+        document.getElementById('color-picker').addEventListener('change', (e) => {
+            color = e.target.value;
+        });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                color = btn.dataset.color;
+                document.getElementById('color-picker').value = color;
+            });
+        });
+
+        // Drawing
+        canvas.addEventListener('mousedown', (e) => {
+            if (role === 'host') {
+                isDrawing = true;
+                lastX = e.offsetX / zoom;
+                lastY = e.offsetY / zoom;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing && role === 'host') {
+                const x = e.offsetX / zoom;
+                const y = e.offsetY / zoom;
+                drawLine(lastX, lastY, x, y, color);
+                drawings.push({x0: lastX, y0: lastY, x1: x, y1: y, color});
+                socket.emit('state', { room, action: 'draw', x0: lastX, y0: lastY, x1: x, y1: y, color });
+                setDoc(roomRef, { drawings }, { merge: true });
+                lastX = x;
+                lastY = y;
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        function drawLine(x0, y0, x1, y1, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2 / zoom;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+        }
+
+        // Measure latency periodically
+        setInterval(() => {
+            const start = Date.now();
+            socket.emit('ping', start);
+        }, 5000);
+
+        socket.on('pong', (start) => {
+            latency = (Date.now() - start) / 1000;
+        });
+    </script>
+</body>
+</html>

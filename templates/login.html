@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>Syncronized Video Watcher</title>
+<link rel="stylesheet" href="/static/style.css">
+<script type="module" src="/static/js/firebase.js"></script>
+<script type="module" src="/static/js/app.js"></script>
+</head>
+
+<body>
+    <div id="loginPage" class="card show">
+        <h1>Syncronized Video Watcher</h1>
+        <p class="subtitle">Sign in with your @gordoncollege.edu.ph account</p>
+        <div class="tabs">
+            <div class="tab activeTab" id="signupTab">Sign Up</div>
+            <div class="tab" id="loginTab">Login</div>
+        </div>
+        <div id="signupForm">
+
+            <input id="signupName" placeholder="Full Name">
+            <input id="signupEmail" placeholder="Email">
+            <input id="signupPassword" type="password" placeholder="Password">
+            <input id="signupConfirm" type="password" placeholder="Confirm Password">
+            <button id="signupBtn">Sign Up</button>
+        </div>
+            <div id="loginForm">
+                <input id="loginEmail" placeholder="Email">
+                <input id="loginPassword" type="password" placeholder="Password">
+                <button id="loginBtn">Login</button>
+            </div>
+        </div>
+        <div id="rolePage">
+            <button id="logoutBtn" class="logout">Logout</button>
+            <h2>Choose Your Role</h2>
+            <div class="roleContainer">
+                <div class="roleCard" id="hostBtn">
+                    <h3>Host</h3>
+                    <p>Upload videos or share YouTube links</p>
+                </div>
+                <div class="roleCard">
+                    <h3>Viewer</h3>
+                    <p>Join a room and watch together</p>
+                </div>
+            </div>
+        </div>
+</body>
+</html>
