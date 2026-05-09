@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_socketio import SocketIO, emit, join_room
 import os
 import json
@@ -47,7 +47,31 @@ def create_firestore_room(room, url, role):
     with urlopen(req, timeout=10) as response:
         return response.status
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
+def static_index():
+    return send_from_directory('pages', 'index.html')
+
+@app.route('/role.html')
+def static_role():
+    return send_from_directory('pages', 'role.html')
+
+@app.route('/host.html')
+def static_host():
+    return send_from_directory('pages', 'host.html')
+
+@app.route('/viewer.html')
+def static_viewer():
+    return send_from_directory('pages', 'viewer.html')
+
+@app.route('/css/<path:filename>')
+def static_css(filename):
+    return send_from_directory('css', filename)
+
+@app.route('/js/<path:filename>')
+def static_js(filename):
+    return send_from_directory('js', filename)
+
+@app.route('/flask-watch', methods=['GET', 'POST'])
 def index():
     role = request.args.get('role')
     if request.method == 'POST':

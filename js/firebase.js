@@ -23,7 +23,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg",
   authDomain: "collaborative-video-viewer.firebaseapp.com",
   projectId: "collaborative-video-viewer",
-  databaseURL: "https://collaborative-video-viewer-default-rtdb.firebaseio.com",
+  databaseURL: "https://collaborative-video-viewer-default-rtdb.asia-southeast1.firebasedatabase.app",
   storageBucket: "collaborative-video-viewer.firebasestorage.app",
   messagingSenderId: "118746109883",
   appId: "1:118746109883:web:1350a9841548bb1134169e",
