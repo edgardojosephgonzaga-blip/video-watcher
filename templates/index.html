@@ -6,68 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Start Room</title>
 <link rel="stylesheet" href="/static/style.css">
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg",
-    authDomain: "collaborative-video-viewer.firebaseapp.com",
-    projectId: "collaborative-video-viewer",
-    storageBucket: "collaborative-video-viewer.firebasestorage.app",
-    messagingSenderId: "118746109883",
-    appId: "1:118746109883:web:1350a9841548bb1134169e",
-    measurementId: "G-8DNNW5T2XL"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-function getRoomName(url) {
-    return url.replace('https://', '').replaceAll('/', '_');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('roomForm');
-    const submitBtn = document.getElementById('roomSubmit');
-
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const url = formData.get('url');
-        const role = formData.get('role');
-        const room = getRoomName(url);
-
-        submitBtn.disabled = true;
-
-        try {
-            await setDoc(doc(db, 'rooms', room), {
-                url,
-                role,
-                time: 0,
-                playing: false,
-                zoom: 1,
-                drawings: [],
-                updatedAt: serverTimestamp(),
-                createdAt: serverTimestamp()
-            }, { merge: true });
-
-            form.submit();
-        } catch (error) {
-            console.error('Room creation failed:', error);
-            alert('Unable to create the room in Firestore. Please check your Firebase project and rules.');
-            submitBtn.disabled = false;
-        }
-    });
-});
-</script>
 </head>
 
 <body>
     <form id="roomForm" class="card" method="POST" action="/">
         <h1>{{ 'Host' if role == 'host' else 'Join' }} Watch Room</h1>
         <p class="subtitle">Paste a YouTube video link to {{ 'start' if role == 'host' else 'join' }} a synchronized room.</p>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
         <input type="hidden" name="role" value="{{ role }}">
         <input name="url" type="url" placeholder="https://www.youtube.com/watch?v=..." required>
         <button id="roomSubmit" type="submit">{{ 'Start Room' if role == 'host' else 'Join Room' }}</button>

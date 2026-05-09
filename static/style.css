@@ -21,6 +21,11 @@ text-align:center;
 color:gray;
 }
 
+.error{
+color:#b00020;
+font-size:14px;
+}
+
 .tabs{
 display:flex;
 background:#eee;
