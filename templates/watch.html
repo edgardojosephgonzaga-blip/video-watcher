@@ -8,28 +8,21 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAR6Wxm1NgnMOapDq41ter3wjH0GA1vlhA",
-            authDomain: "svww-b179c.firebaseapp.com",
-            projectId: "svww-b179c",
-            storageBucket: "svww-b179c.firebasestorage.app",
-            messagingSenderId: "385630085703",
-            appId: "1:385630085703:web:d30dd9e3f5a77e08cf4762",
-            measurementId: "G-LD7LBMDQJK"
+            apiKey: "AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg",
+            authDomain: "collaborative-video-viewer.firebaseapp.com",
+            projectId: "collaborative-video-viewer",
+            storageBucket: "collaborative-video-viewer.firebasestorage.app",
+            messagingSenderId: "118746109883",
+            appId: "1:118746109883:web:1350a9841548bb1134169e",
+            measurementId: "G-8DNNW5T2XL"
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
-        const authReady = new Promise((resolve) => {
-            onAuthStateChanged(auth, (user) => resolve(user));
-        });
 
-        window.auth = auth;
-        window.authReady = authReady;
         window.db = db;
         window.doc = doc;
         window.setDoc = setDoc;
@@ -86,7 +79,7 @@
                 await setDoc(roomRef, data, options);
             } catch (error) {
                 console.error('Firestore room write failed:', error);
-                alert('Unable to save room data. Please check Firestore rules and your signed-in account.');
+                alert('Unable to save room data. Please check Firestore rules.');
             }
         }
 
@@ -132,18 +125,6 @@
 
             // Initialize Firestore room
             roomRef = doc(db, 'rooms', room);
-            const user = await window.authReady;
-            if (!user) {
-                alert('Please log in before opening a watch room.');
-                window.location.href = '/';
-                return;
-            }
-            if (!user.email || !user.email.toLowerCase().endsWith('@gordoncollege.edu.ph')) {
-                alert('Please use your @gordoncollege.edu.ph account.');
-                window.location.href = '/';
-                return;
-            }
-
             if (role === 'host') {
                 saveRoomData({
                     time: player.getCurrentTime(),
@@ -160,7 +141,7 @@
                 }
             }, (error) => {
                 console.error('Firestore room listener failed:', error);
-                alert('Unable to read room data. Please check Firestore rules and your signed-in account.');
+                alert('Unable to read room data. Please check Firestore rules.');
             });
         }
 

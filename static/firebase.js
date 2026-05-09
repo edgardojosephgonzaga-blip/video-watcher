@@ -3,13 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
  const firebaseConfig = {
-  apiKey: "AIzaSyAR6Wxm1NgnMOapDq41ter3wjH0GA1vlhA",
-  authDomain: "svww-b179c.firebaseapp.com",
-  projectId: "svww-b179c",
-  storageBucket: "svww-b179c.firebasestorage.app",
-  messagingSenderId: "385630085703",
-  appId: "1:385630085703:web:d30dd9e3f5a77e08cf4762",
-  measurementId: "G-LD7LBMDQJK"
+  apiKey: "AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg",
+  authDomain: "collaborative-video-viewer.firebaseapp.com",
+  projectId: "collaborative-video-viewer",
+  storageBucket: "collaborative-video-viewer.firebasestorage.app",
+  messagingSenderId: "118746109883",
+  appId: "1:118746109883:web:1350a9841548bb1134169e",
+  measurementId: "G-8DNNW5T2XL"
 };
 
 const app = initializeApp(firebaseConfig);
