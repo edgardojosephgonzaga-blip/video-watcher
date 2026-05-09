@@ -76,6 +76,7 @@ loginBtn.addEventListener('click', async () => {
 logoutBtn.addEventListener('click', async () => {
     try {
         await signOut(auth);
+        window.location.href = '/';
     } catch (error) {
         console.error('Logout error:', error);
         alert('Logout failed: ' + error.message);
