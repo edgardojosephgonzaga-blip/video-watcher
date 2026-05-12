@@ -1,5 +1,10 @@
 {
+  "name": "collaborative-video-viewer",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npx serve ."
+  },
   "dependencies": {
-    "git": "^0.1.5"
+    "serve": "^14.2.4"
   }
 }
