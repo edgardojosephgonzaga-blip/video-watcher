@@ -271,12 +271,6 @@ function adjustScreenForDevice() {
   const deviceType = getDeviceType();
   document.documentElement.dataset.deviceType = deviceType;
   document.body.dataset.deviceType = deviceType;
-
-  const videoPlayer = document.querySelector('.video-player');
-  if (videoPlayer) {
-    videoPlayer.style.maxHeight = `${Math.min(window.innerHeight * 0.75, 700)}px`;
-    videoPlayer.style.height = 'auto';
-  }
 }
 
 window.addEventListener('load', adjustScreenForDevice);

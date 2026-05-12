@@ -123,10 +123,20 @@ alert(error.message)
 
 // LOGOUT
 window.logout = function(){
+const cleanup = window.currentRoom && window.currentUser
+  ? removeParticipant(window.currentRoom, window.currentUser.uid)
+  : Promise.resolve();
 
-signOut(auth).then(()=>{
+localStorage.removeItem('currentRoom');
+window.currentRoom = null;
+
+cleanup.then(() => signOut(auth)).then(()=>{
 
 window.location.href="index.html"
+
+}).catch((error)=>{
+
+alert(error.message)
 
 })
 
@@ -192,7 +202,7 @@ window.addParticipant = function(roomCode, userId, fullName){
 window.removeParticipant = function(roomCode, userId){
   const participantRef = ref(database, `rooms/${roomCode}/participants/${userId}`);
   
-  set(participantRef, null).catch(error => {
+  return set(participantRef, null).catch(error => {
     console.error("Error removing participant: " + error.message);
   });
 }
@@ -211,8 +221,18 @@ window.listenToParticipants = function(roomCode, callback){
 }
 
 window.joinRoom = function(){
-  const roomCode = document.getElementById('roomCode').value;
-  if(roomCode.length !== 4){
+  const signedInUser = auth.currentUser;
+  if(signedInUser && !window.currentUser){
+    window.currentUser = { uid: signedInUser.uid, email: signedInUser.email };
+  }
+
+  if(!window.currentUser){
+    alert("Please sign in first so the app can add you to the room.");
+    return;
+  }
+
+  const roomCode = document.getElementById('roomCode').value.trim();
+  if(!/^\d{4}$/.test(roomCode)){
     alert("Please enter a valid 4-digit room code");
     return;
   }
@@ -225,9 +245,7 @@ window.joinRoom = function(){
       localStorage.setItem('currentRoom', roomCode);
       
       // Add this viewer to participants
-      if(window.currentUser) {
-        addParticipant(roomCode, window.currentUser.uid, window.currentUser.fullName);
-      }
+      addParticipant(roomCode, window.currentUser.uid, window.currentUser.fullName || window.currentUser.email || "Viewer");
       
       // Start listening to participants
       listenToParticipants(roomCode, updateParticipantsList);

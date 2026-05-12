@@ -163,6 +163,20 @@ width: 100%;
 background: #1c2a3a;
 height: 350px;
 border-radius: 10px;
+overflow: hidden;
+}
+
+.video-player iframe,
+.video-player video{
+display: block;
+width: 100%;
+height: 100%;
+border: 0;
+background: #000;
+}
+
+.video-player video{
+object-fit: contain;
 }
 
 .doodle-canvas{
@@ -631,4 +645,16 @@ margin-top: 2px;
 
 .viewer-mode video::-moz-media-controls {
   display: none !important;
+}
+
+/* Keep the host video visible without stretching, even after responsive height rules. */
+.host-page .video-player-container{
+max-width: min(1000px, calc(100vw - 40px));
+width: calc(100% - 40px);
+}
+
+.host-page .video-player{
+aspect-ratio: 16 / 9;
+height: min(56.25vw, max(180px, calc(100vh - 330px)), 560px);
+min-height: 180px;
 }
