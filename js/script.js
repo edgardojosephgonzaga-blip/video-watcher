@@ -118,13 +118,16 @@ function loadYoutubeVideo(url){
       videoId: videoId,
       loadedAt: new Date().toISOString()
     };
+    window.currentVideoData = videoData;
     
     if(!window.currentRoom){
       window.currentRoom = createRoom(window.currentUser.uid, videoData);
+      setTranscriptStatus('Ready to transcribe with Gemini.');
       // Start listening to participants
       setTimeout(() => {
         if(window.currentRoom) {
           listenToParticipants(window.currentRoom, updateParticipantsList);
+          listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
           
           // Start listening to doodle sync
           listenToDoodles(window.currentRoom, updateViewerAnnotations);
@@ -142,6 +145,9 @@ function loadYoutubeVideo(url){
       }, 500);
     } else {
       updateRoomVideo(window.currentRoom, videoData);
+      listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+      updateTranscriptPanel(null);
+      setTranscriptStatus('Ready to transcribe with Gemini.');
     }
   }
 }
@@ -162,16 +168,20 @@ function loadUploadedVideo(file){
       const videoData = {
         type: 'upload',
         url: e.target.result,
+        mimeType: file.type || 'video/mp4',
         fileName: file.name,
         loadedAt: new Date().toISOString()
       };
+      window.currentVideoData = videoData;
       
       if(!window.currentRoom){
         window.currentRoom = createRoom(window.currentUser.uid, videoData);
+        setTranscriptStatus('Ready to transcribe with Gemini.');
         // Start listening to participants
         setTimeout(() => {
           if(window.currentRoom) {
             listenToParticipants(window.currentRoom, updateParticipantsList);
+            listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
             
             // Start listening to doodle sync
             listenToDoodles(window.currentRoom, updateViewerAnnotations);
@@ -192,6 +202,9 @@ function loadUploadedVideo(file){
         }, 500);
       } else {
         updateRoomVideo(window.currentRoom, videoData);
+        listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+        updateTranscriptPanel(null);
+        setTranscriptStatus('Ready to transcribe with Gemini.');
       }
     }
   };
@@ -271,6 +284,107 @@ function adjustScreenForDevice() {
   const deviceType = getDeviceType();
   document.documentElement.dataset.deviceType = deviceType;
   document.body.dataset.deviceType = deviceType;
+}
+
+function setTranscriptStatus(message){
+  const status = document.getElementById('transcriptStatus');
+  if(status) {
+    status.textContent = message;
+  }
+}
+
+function escapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
+}
+
+window.updateTranscriptPanel = function(transcript){
+  const notes = document.getElementById('transcriptNotes');
+  if(!notes) return;
+
+  if(!transcript || !transcript.text){
+    notes.innerHTML = '<p class="empty-transcript">No transcript yet.</p>';
+    return;
+  }
+
+  const generatedAt = transcript.generatedAt
+    ? new Date(transcript.generatedAt).toLocaleString()
+    : 'Just now';
+  notes.innerHTML = `
+    <span class="transcript-meta">Generated ${escapeHtml(generatedAt)}</span>
+    ${escapeHtml(transcript.text)}
+  `;
+  setTranscriptStatus('Gemini notes are ready.');
+}
+
+function getTranscriptionEndpoint(){
+  return window.TRANSCRIBE_API_URL || '/api/transcribe-video';
+}
+
+async function readApiResponse(response){
+  const contentType = response.headers.get('content-type') || '';
+  if(contentType.includes('application/json')){
+    return response.json();
+  }
+
+  const body = await response.text();
+  const preview = body.trim().slice(0, 80);
+  throw new Error(
+    `Transcription backend is not connected. Expected JSON from ${getTranscriptionEndpoint()}, but received: ${preview || response.statusText}`
+  );
+}
+
+window.transcribeCurrentVideo = async function(){
+  const button = document.getElementById('transcribeBtn');
+  const videoData = window.currentVideoData;
+
+  if(!window.currentRoom || !videoData){
+    alert('Load a video first so Gemini has something to transcribe.');
+    return;
+  }
+
+  try {
+    if(button) {
+      button.disabled = true;
+      button.textContent = 'Working...';
+    }
+    setTranscriptStatus('Gemini is transcribing the video...');
+
+    const response = await fetch(getTranscriptionEndpoint(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoData })
+    });
+    const result = await readApiResponse(response);
+
+    if(!response.ok){
+      throw new Error(result.error || 'Unable to transcribe this video.');
+    }
+
+    const transcript = {
+      text: result.transcript,
+      generatedAt: new Date().toISOString(),
+      source: videoData.type,
+      model: result.model || 'gemini'
+    };
+
+    await updateRoomTranscript(window.currentRoom, transcript);
+    updateTranscriptPanel(transcript);
+  } catch(error) {
+    console.error('Transcription failed:', error);
+    setTranscriptStatus(error.message);
+    alert(error.message);
+  } finally {
+    if(button) {
+      button.disabled = false;
+      button.textContent = 'Transcribe';
+    }
+  }
 }
 
 window.addEventListener('load', adjustScreenForDevice);

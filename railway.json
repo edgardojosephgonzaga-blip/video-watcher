@@ -4,6 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python app.py"
+    "startCommand": "gunicorn --worker-class eventlet -w 1 app:app"
   }
 }

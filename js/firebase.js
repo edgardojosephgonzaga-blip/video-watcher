@@ -154,6 +154,7 @@ window.createRoom = function(userId, videoData){
     hostId: userId,
     hostName: window.currentUser?.fullName || "Host",
     videoData: videoData,
+    transcript: null,
     createdAt: new Date().toISOString(),
     annotations: [],
     participants: {
@@ -181,8 +182,23 @@ window.createRoom = function(userId, videoData){
 
 window.updateRoomVideo = function(roomCode, videoData){
   const roomRef = ref(database, `rooms/${roomCode}`);
-  update(roomRef, { videoData: videoData }).catch(error => {
+  update(roomRef, { videoData: videoData, transcript: null }).catch(error => {
     console.error("Error updating room video: " + error.message);
+  });
+}
+
+window.updateRoomTranscript = function(roomCode, transcript){
+  const transcriptRef = ref(database, `rooms/${roomCode}/transcript`);
+  return set(transcriptRef, transcript).catch(error => {
+    console.error("Error updating room transcript: " + error.message);
+    throw error;
+  });
+}
+
+window.listenToRoomTranscript = function(roomCode, callback){
+  const transcriptRef = ref(database, `rooms/${roomCode}/transcript`);
+  onValue(transcriptRef, (snapshot) => {
+    callback(snapshot.exists() ? snapshot.val() : null);
   });
 }
 
@@ -292,11 +308,15 @@ function startListeningToRoom(roomCode){
       if(roomData.playbackState && window.applyPlaybackState){
         window.applyPlaybackState(roomData.playbackState);
       }
+      if(window.updateTranscriptPanel){
+        window.updateTranscriptPanel(roomData.transcript || null);
+      }
     }
   });
 }
 
 function updateViewerVideo(videoData){
+  window.currentVideoData = videoData;
   const videoPlayer = document.getElementById('videoPlayer');
   if(videoData.type === 'youtube'){
     const videoId = extractYoutubeId(videoData.url);
@@ -401,7 +421,8 @@ function extractYoutubeId(url){
 window.updateRoomVideo = function(roomCode, videoData){
   const roomRef = ref(database, `rooms/${roomCode}`);
   update(roomRef, {
-    videoData: videoData
+    videoData: videoData,
+    transcript: null
   }).catch(error => {
     console.error("Error updating video: " + error.message);
   });

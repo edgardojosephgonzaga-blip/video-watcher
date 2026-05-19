@@ -52,9 +52,24 @@
 
 </div>
 
+<div class="watch-main">
 <div class="video-player-container">
 <div class="video-player"></div>
 <canvas id="doodleCanvas" class="doodle-canvas" style="display:none;"></canvas>
+</div>
+
+<aside class="transcript-panel" aria-live="polite">
+  <div class="transcript-header">
+    <div>
+      <h3>Transcribed Notes</h3>
+      <p id="transcriptStatus">Load a video, then generate notes with Gemini.</p>
+    </div>
+    <button id="transcribeBtn" class="control-btn" onclick="transcribeCurrentVideo()">Transcribe</button>
+  </div>
+  <div id="transcriptNotes" class="transcript-notes">
+    <p class="empty-transcript">No transcript yet.</p>
+  </div>
+</aside>
 </div>
 
 <div class="controls">
@@ -77,6 +92,7 @@
 </div>
 </div>
 
+<script src="../js/config.js"></script>
 <script type="module" src="../js/firebase.js"></script>
 <script src="../js/script.js"></script>
 <script src="../js/doodle.js"></script>

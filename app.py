@@ -1,17 +1,43 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import os
 import json
 from hashlib import sha256
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins='*')
 
 rooms = {}  # room: {'time': float, 'zoom': float, 'drawings': list of dicts}
 FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', 'collaborative-video-viewer')
 FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', 'AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+ALLOWED_ORIGINS = {
+    origin.strip()
+    for origin in os.environ.get(
+        'ALLOWED_ORIGINS',
+        'https://collaborative-video-viewer.web.app,'
+        'https://collaborative-video-viewer.firebaseapp.com,'
+        'http://localhost:5000,'
+        'http://127.0.0.1:5000'
+    ).split(',')
+    if origin.strip()
+}
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get('Origin')
+    if '*' in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    elif origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
 
 def get_room_id(url):
     return sha256(url.strip().encode('utf-8')).hexdigest()[:16]
@@ -47,6 +73,68 @@ def create_firestore_room(room, url, role):
     with urlopen(req, timeout=10) as response:
         return response.status
 
+def extract_gemini_text(response_body):
+    candidates = response_body.get('candidates', [])
+    if not candidates:
+        return ''
+    parts = candidates[0].get('content', {}).get('parts', [])
+    return '\n'.join(part.get('text', '') for part in parts).strip()
+
+def build_gemini_video_part(video_data):
+    video_type = video_data.get('type')
+    if video_type == 'youtube':
+        url = video_data.get('url') or video_data.get('videoId')
+        if not url:
+            raise ValueError('Missing YouTube URL.')
+        return {'file_data': {'file_uri': url}}
+
+    if video_type == 'upload':
+        data_url = video_data.get('url', '')
+        if ',' not in data_url:
+            raise ValueError('Uploaded video data is missing.')
+        header, base64_data = data_url.split(',', 1)
+        mime_type = video_data.get('mimeType') or 'video/mp4'
+        if header.startswith('data:') and ';' in header:
+            mime_type = header[5:].split(';', 1)[0] or mime_type
+        return {'inline_data': {'mime_type': mime_type, 'data': base64_data}}
+
+    raise ValueError('Unsupported video type.')
+
+def transcribe_with_gemini(video_data):
+    if not GEMINI_API_KEY:
+        raise RuntimeError('GEMINI_API_KEY is not set on the server.')
+
+    prompt = (
+        'Transcribe the spoken content from this video into clear study notes. '
+        'Keep the notes useful for students: include a short summary, important points, '
+        'and any action items or terms mentioned. If the video has no speech, describe '
+        'the visible content briefly instead.'
+    )
+    payload = {
+        'contents': [{
+            'parts': [
+                build_gemini_video_part(video_data),
+                {'text': prompt}
+            ]
+        }]
+    }
+    endpoint = (
+        f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:'
+        f'generateContent?key={GEMINI_API_KEY}'
+    )
+    req = Request(
+        endpoint,
+        data=json.dumps(payload).encode('utf-8'),
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+    with urlopen(req, timeout=120) as response:
+        body = json.loads(response.read().decode('utf-8'))
+    transcript = extract_gemini_text(body)
+    if not transcript:
+        raise RuntimeError('Gemini returned an empty transcript.')
+    return transcript
+
 @app.route('/')
 def static_index():
     return send_from_directory('pages', 'index.html')
@@ -70,6 +158,28 @@ def static_css(filename):
 @app.route('/js/<path:filename>')
 def static_js(filename):
     return send_from_directory('js', filename)
+
+@app.route('/api/transcribe-video', methods=['POST'])
+def transcribe_video():
+    data = request.get_json(silent=True) or {}
+    video_data = data.get('videoData') or {}
+    try:
+        transcript = transcribe_with_gemini(video_data)
+        return jsonify({'transcript': transcript, 'model': GEMINI_MODEL})
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except RuntimeError as exc:
+        return jsonify({'error': str(exc)}), 500
+    except HTTPError as exc:
+        error_body = exc.read().decode('utf-8', errors='replace')
+        app.logger.error('Gemini API error: %s', error_body)
+        return jsonify({'error': 'Gemini API rejected the video request.'}), exc.code
+    except URLError:
+        app.logger.exception('Unable to reach Gemini API')
+        return jsonify({'error': 'Unable to reach Gemini API.'}), 502
+    except Exception:
+        app.logger.exception('Unexpected transcription failure')
+        return jsonify({'error': 'Unexpected transcription failure.'}), 500
 
 @app.route('/flask-watch', methods=['GET', 'POST'])
 def index():

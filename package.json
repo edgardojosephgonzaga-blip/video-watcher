@@ -2,7 +2,7 @@
   "name": "collaborative-video-viewer",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx serve ."
+    "start": "serve -s . -1 $PORT"
   },
   "dependencies": {
     "serve": "^14.2.4"

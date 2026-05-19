@@ -144,6 +144,19 @@ display:none;
 }
 
 /* Doodle and Zoom Features */
+.watch-main{
+display: flex;
+align-items: stretch;
+gap: 20px;
+max-width: 1220px;
+width: calc(100% - 40px);
+margin: 0 auto;
+}
+
+.watch-main .video-player-container{
+margin: 0;
+}
+
 .video-player-container{
 position: relative;
 margin: 0 auto;
@@ -295,6 +308,66 @@ display: flex;
 flex-direction: column;
 }
 
+.transcript-panel{
+width: 330px;
+background: #ffffff;
+border: 1px solid rgba(7, 11, 36, 0.1);
+border-radius: 10px;
+box-shadow: 0 12px 30px rgba(7, 11, 36, 0.12);
+display: flex;
+flex-direction: column;
+min-height: 280px;
+max-height: 520px;
+overflow: hidden;
+}
+
+.transcript-header{
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+gap: 12px;
+padding: 16px;
+border-bottom: 1px solid #eef0f4;
+background: #f8fafc;
+}
+
+.transcript-header h3{
+margin: 0;
+font-size: 18px;
+color: #070b24;
+}
+
+.transcript-header p{
+margin: 5px 0 0;
+font-size: 12px;
+line-height: 1.35;
+color: #667085;
+}
+
+.transcript-notes{
+padding: 16px;
+overflow-y: auto;
+line-height: 1.55;
+font-size: 14px;
+color: #172033;
+white-space: pre-wrap;
+flex: 1;
+}
+
+.empty-transcript{
+margin: 0;
+color: #777;
+font-style: italic;
+}
+
+.transcript-meta{
+display: block;
+font-size: 12px;
+font-weight: bold;
+color: #475467;
+margin-bottom: 10px;
+}
+
 .participants-sidebar h3{
 margin: 0 0 15px 0;
 font-size: 18px;
@@ -427,6 +500,18 @@ margin-top: 2px;
     max-height: 200px;
   }
 
+  .watch-main {
+    flex-direction: column;
+    width: calc(100% - 20px);
+    gap: 10px;
+  }
+
+  .transcript-panel {
+    width: 100%;
+    min-height: 220px;
+    max-height: 280px;
+  }
+
   .participants-sidebar h3 {
     font-size: 16px;
   }
@@ -488,6 +573,10 @@ margin-top: 2px;
 
   .participants-sidebar {
     width: 250px;
+  }
+
+  .transcript-panel {
+    width: 280px;
   }
 
   .controls {
@@ -649,8 +738,8 @@ margin-top: 2px;
 
 /* Keep the host video visible without stretching, even after responsive height rules. */
 .host-page .video-player-container{
-max-width: min(1000px, calc(100vw - 40px));
-width: calc(100% - 40px);
+max-width: none;
+width: auto;
 }
 
 .host-page .video-player{
