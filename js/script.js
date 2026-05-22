@@ -121,16 +121,16 @@ function loadYoutubeVideo(url){
     window.currentVideoData = videoData;
     
     if(!window.currentRoom){
-      window.currentRoom = createRoom(window.currentUser.uid, videoData);
+      window.currentRoom = window.createRoom(window.currentUser.uid, videoData);
       setTranscriptStatus('Ready to transcribe with Gemini.');
       // Start listening to participants
       setTimeout(() => {
         if(window.currentRoom) {
-          listenToParticipants(window.currentRoom, updateParticipantsList);
-          listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+          window.listenToParticipants(window.currentRoom, window.updateParticipantsList);
+          window.listenToRoomTranscript(window.currentRoom, window.updateTranscriptPanel);
           
           // Start listening to doodle sync
-          listenToDoodles(window.currentRoom, updateViewerAnnotations);
+          window.listenToDoodles(window.currentRoom, window.updateViewerAnnotations);
           
           // Initialize doodle canvas after video loads
           setTimeout(() => {
@@ -145,7 +145,7 @@ function loadYoutubeVideo(url){
       }, 500);
     } else {
       updateRoomVideo(window.currentRoom, videoData);
-      listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+      window.listenToRoomTranscript(window.currentRoom, window.updateTranscriptPanel);
       updateTranscriptPanel(null);
       setTranscriptStatus('Ready to transcribe with Gemini.');
     }
@@ -175,16 +175,16 @@ function loadUploadedVideo(file){
       window.currentVideoData = videoData;
       
       if(!window.currentRoom){
-        window.currentRoom = createRoom(window.currentUser.uid, videoData);
+        window.currentRoom = window.createRoom(window.currentUser.uid, videoData);
         setTranscriptStatus('Ready to transcribe with Gemini.');
         // Start listening to participants
         setTimeout(() => {
           if(window.currentRoom) {
-            listenToParticipants(window.currentRoom, updateParticipantsList);
-            listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+            window.listenToParticipants(window.currentRoom, window.updateParticipantsList);
+            window.listenToRoomTranscript(window.currentRoom, window.updateTranscriptPanel);
             
             // Start listening to doodle sync
-            listenToDoodles(window.currentRoom, updateViewerAnnotations);
+            window.listenToDoodles(window.currentRoom, window.updateViewerAnnotations);
             
             // Attach playback sync for host video
             attachVideoPlaybackSync(window.currentRoom);
@@ -202,7 +202,7 @@ function loadUploadedVideo(file){
         }, 500);
       } else {
         updateRoomVideo(window.currentRoom, videoData);
-        listenToRoomTranscript(window.currentRoom, updateTranscriptPanel);
+        window.listenToRoomTranscript(window.currentRoom, window.updateTranscriptPanel);
         updateTranscriptPanel(null);
         setTranscriptStatus('Ready to transcribe with Gemini.');
       }

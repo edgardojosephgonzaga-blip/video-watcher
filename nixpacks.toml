@@ -1,0 +1,6 @@
+[phases.setup]
+nixPkgs = ["python312", "gcc"]
+
+[start]
+cmd = "gunicorn --worker-class eventlet -w 1 app:app"
+

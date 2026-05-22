@@ -33,6 +33,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
+let authReadyResolved = false;
+let resolveAuthReady;
+window.firebaseAuthReady = new Promise((resolve) => {
+  resolveAuthReady = resolve;
+});
+
+function markAuthReady(){
+  if(!authReadyResolved){
+    authReadyResolved = true;
+    resolveAuthReady();
+  }
+}
 
 // Restore current room if the page refreshes or reloads after room creation
 const savedRoom = localStorage.getItem('currentRoom');
@@ -45,16 +57,19 @@ onAuthStateChanged(auth, (user) => {
     const userRef = ref(database, `users/${user.uid}`);
     get(userRef).then((snapshot) => {
       if(snapshot.exists()){
-        window.currentUser = snapshot.val();
+        window.currentUser = { uid: user.uid, email: user.email, ...snapshot.val() };
       } else {
         window.currentUser = { uid: user.uid, email: user.email };
       }
+      markAuthReady();
     }).catch(error => {
       console.error("Error restoring user profile:", error.message);
       window.currentUser = { uid: user.uid, email: user.email };
+      markAuthReady();
     });
   } else {
     window.currentUser = null;
+    markAuthReady();
   }
 });
 
@@ -205,13 +220,14 @@ window.listenToRoomTranscript = function(roomCode, callback){
 window.addParticipant = function(roomCode, userId, fullName){
   const participantRef = ref(database, `rooms/${roomCode}/participants/${userId}`);
   
-  set(participantRef, {
+  return set(participantRef, {
     uid: userId,
     fullName: fullName,
     joinedAt: new Date().toISOString(),
     role: "viewer"
   }).catch(error => {
-    alert("Error adding participant: " + error.message);
+    console.error("Error adding participant: " + error.message);
+    throw error;
   });
 }
 
@@ -236,7 +252,14 @@ window.listenToParticipants = function(roomCode, callback){
   });
 }
 
-window.joinRoom = function(){
+window.joinRoom = async function(){
+  const joinButton = document.querySelector('.join-room .main-btn');
+  if(joinButton){
+    joinButton.disabled = true;
+    joinButton.textContent = 'Joining...';
+  }
+
+  await window.firebaseAuthReady;
   const signedInUser = auth.currentUser;
   if(signedInUser && !window.currentUser){
     window.currentUser = { uid: signedInUser.uid, email: signedInUser.email };
@@ -244,30 +267,38 @@ window.joinRoom = function(){
 
   if(!window.currentUser){
     alert("Please sign in first so the app can add you to the room.");
+    if(joinButton){
+      joinButton.disabled = false;
+      joinButton.textContent = 'Join Room';
+    }
     return;
   }
 
   const roomCode = document.getElementById('roomCode').value.trim();
   if(!/^\d{4}$/.test(roomCode)){
     alert("Please enter a valid 4-digit room code");
+    if(joinButton){
+      joinButton.disabled = false;
+      joinButton.textContent = 'Join Room';
+    }
     return;
   }
   
   const roomRef = ref(database, `rooms/${roomCode}`);
   
-  get(roomRef).then((snapshot) => {
+  get(roomRef).then(async (snapshot) => {
     if(snapshot.exists()){
       window.currentRoom = roomCode;
       localStorage.setItem('currentRoom', roomCode);
       
       // Add this viewer to participants
-      addParticipant(roomCode, window.currentUser.uid, window.currentUser.fullName || window.currentUser.email || "Viewer");
+      await window.addParticipant(roomCode, window.currentUser.uid, window.currentUser.fullName || window.currentUser.email || "Viewer");
       
       // Start listening to participants
-      listenToParticipants(roomCode, updateParticipantsList);
+      window.listenToParticipants(roomCode, window.updateParticipantsList);
       
       // Start listening to doodles
-      listenToDoodles(roomCode, updateViewerAnnotations);
+      window.listenToDoodles(roomCode, window.updateViewerAnnotations);
       
       startListeningToRoom(roomCode);
       const viewerContainer = document.getElementById('viewerContainer');
@@ -287,6 +318,11 @@ window.joinRoom = function(){
     }
   }).catch(error => {
     alert("Error: " + error.message);
+  }).finally(() => {
+    if(joinButton){
+      joinButton.disabled = false;
+      joinButton.textContent = 'Join Room';
+    }
   });
 }
 

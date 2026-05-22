@@ -8,13 +8,15 @@ from urllib.request import Request, urlopen
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret!')
+app.config['MAX_CONTENT_LENGTH'] = int(os.environ.get('MAX_REQUEST_BYTES', 110 * 1024 * 1024))
 socketio = SocketIO(app, cors_allowed_origins='*')
 
 rooms = {}  # room: {'time': float, 'zoom': float, 'drawings': list of dicts}
 FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', 'collaborative-video-viewer')
 FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', 'AIzaSyD1kMohW-RLw0EpfjgL-twy02f9t7Kfgrg')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash')
+MAX_INLINE_VIDEO_BYTES = int(os.environ.get('MAX_INLINE_VIDEO_BYTES', 20 * 1024 * 1024))
 ALLOWED_ORIGINS = {
     origin.strip()
     for origin in os.environ.get(
@@ -80,10 +82,21 @@ def extract_gemini_text(response_body):
     parts = candidates[0].get('content', {}).get('parts', [])
     return '\n'.join(part.get('text', '') for part in parts).strip()
 
+def normalize_youtube_url(video_data):
+    url = (video_data.get('url') or '').strip()
+    video_id = (video_data.get('videoId') or '').strip()
+    if url.startswith(('http://', 'https://')):
+        return url
+    if video_id:
+        return f'https://www.youtube.com/watch?v={video_id}'
+    if url and len(url) == 11:
+        return f'https://www.youtube.com/watch?v={url}'
+    return ''
+
 def build_gemini_video_part(video_data):
     video_type = video_data.get('type')
     if video_type == 'youtube':
-        url = video_data.get('url') or video_data.get('videoId')
+        url = normalize_youtube_url(video_data)
         if not url:
             raise ValueError('Missing YouTube URL.')
         return {'file_data': {'file_uri': url}}
@@ -93,6 +106,13 @@ def build_gemini_video_part(video_data):
         if ',' not in data_url:
             raise ValueError('Uploaded video data is missing.')
         header, base64_data = data_url.split(',', 1)
+        estimated_bytes = (len(base64_data) * 3) // 4
+        if estimated_bytes > MAX_INLINE_VIDEO_BYTES:
+            limit_mb = MAX_INLINE_VIDEO_BYTES // (1024 * 1024)
+            raise ValueError(
+                f'Uploaded videos sent directly to Gemini must be {limit_mb} MB or smaller. '
+                'Use a YouTube URL for longer videos.'
+            )
         mime_type = video_data.get('mimeType') or 'video/mp4'
         if header.startswith('data:') and ';' in header:
             mime_type = header[5:].split(';', 1)[0] or mime_type
@@ -120,12 +140,12 @@ def transcribe_with_gemini(video_data):
     }
     endpoint = (
         f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:'
-        f'generateContent?key={GEMINI_API_KEY}'
+        'generateContent'
     )
     req = Request(
         endpoint,
         data=json.dumps(payload).encode('utf-8'),
-        headers={'Content-Type': 'application/json'},
+        headers={'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY},
         method='POST'
     )
     with urlopen(req, timeout=120) as response:

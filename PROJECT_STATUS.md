@@ -39,6 +39,8 @@ Railway deployment files are present:
 - `Procfile`
 - `railway.json`
 - `requirements.txt`
+- `nixpacks.toml`
+- `runtime.txt`
 
 Start command:
 
@@ -47,6 +49,20 @@ gunicorn --worker-class eventlet -w 1 app:app
 ```
 
 `app.py` reads Railway's `PORT` environment variable.
+
+Gemini transcription requires these Railway variables:
+
+```text
+GEMINI_API_KEY=<Google AI Studio API key>
+SECRET_KEY=<long random string>
+GEMINI_MODEL=gemini-3.5-flash
+```
+
+Get a Gemini key from:
+
+```text
+https://aistudio.google.com/app/apikey
+```
 
 Deploy from Railway dashboard:
 
@@ -128,4 +144,3 @@ If Railway still shows the old UI:
 1. Confirm Railway deployed the latest `main` commit.
 2. Redeploy the Railway service.
 3. Clear browser cache or test in an incognito window.
-

@@ -19,7 +19,7 @@
 
 <div class="join-room">
 
-<input type="text" id="roomCode" placeholder="0000" maxlength="4" inputmode="numeric">
+<input type="text" id="roomCode" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="one-time-code">
 
 <button class="main-btn" onclick="joinRoom()">Join Room</button>
 
@@ -62,8 +62,15 @@
 
 </div>
 
-<script src="../js/script.js"></script>
 <script type="module" src="../js/firebase.js"></script>
+<script src="../js/script.js"></script>
 <script src="../js/doodle.js"></script>
+<script>
+document.getElementById('roomCode')?.addEventListener('keydown', (event) => {
+  if(event.key === 'Enter' && window.joinRoom){
+    window.joinRoom();
+  }
+});
+</script>
 </body>
 </html>
